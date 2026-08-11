@@ -464,11 +464,11 @@ function tryParseJsonParts(
     if (end > arrStart) candidate = body.slice(arrStart, end + 1);
   }
 
-  // Normalize common model quirks
-  candidate = candidate
-    .replace(/[\u201c\u201d]/g, '"') // “ ”
-    .replace(/[\u2018\u2019]/g, "'") // ‘ ’
-    .replace(/,\s*([}\]])/g, "$1"); // trailing commas
+  // Normalize only syntax-level quirks. Do not globally replace curly quotes:
+  // Chinese quotation marks may be valid content inside a JSON string. Replacing
+  // them here turns `他说：“你好”` into unescaped quotes and makes JSON.parse
+  // fail, which used to send the whole {"messages":[...]} wrapper to WeChat.
+  candidate = candidate.replace(/,\s*([}\]])/g, "$1"); // trailing commas
 
   try {
     const data = JSON.parse(candidate) as unknown;

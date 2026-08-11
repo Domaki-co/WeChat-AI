@@ -352,7 +352,7 @@ export class LlmClient {
   ): Promise<ChatResult> {
     const toolNames = opts.tools?.length ? opts.tools : [];
     const timeZone = opts.timeZone?.trim() || "Asia/Shanghai";
-    const maxRounds = Math.max(0, opts.maxToolRounds ?? 2);
+    const maxRounds = Math.max(0, opts.maxToolRounds ?? 4);
     const upstream =
       opts.upstream === undefined ? this.defaultUpstream : opts.upstream;
 
