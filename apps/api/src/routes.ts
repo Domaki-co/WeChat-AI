@@ -193,16 +193,15 @@ import {
   StickerSecurityError,
 } from "./sticker-security.js";
 import {
-  CC_AUTH_CONFIG,
   CC_CDN_STICKER,
   CC_NO_STORE,
   CC_PRIVATE_NO_STORE,
   CC_PRIVATE_QR,
   CC_PRIVATE_STICKER,
-  CDN_AUTH_CONFIG,
   CDN_CDN_STICKER,
   etagFromHash,
   ifNoneMatchHits,
+  setPrivateNoStore,
   setPublicCache,
 } from "./cache-headers.js";
 import { qrSvg } from "./qrcode.js";
@@ -645,10 +644,10 @@ export async function registerRoutes(
   const authInvitePeekLimiter = new RateLimiter(40, 60_000);
 
   app.get("/api/v1/auth/config", async (_req, reply) => {
-    setPublicCache(reply, CC_AUTH_CONFIG, CDN_AUTH_CONFIG);
+    setPrivateNoStore(reply);
     const oauth = loadLinuxDoConfig();
     return {
-      oauthEnabled: Boolean(oauth),
+      oauthEnabled: Boolean(oauth) && ctx.cfg.linuxdoAuthEnabled,
       provider: "linux.do",
       localAuthEnabled: ctx.cfg.localAuthEnabled,
       inviteRequiredForLocal: ctx.cfg.inviteRequiredForLocal,
@@ -658,6 +657,11 @@ export async function registerRoutes(
 
   app.get("/api/v1/auth/login", async (req, reply) => {
     const oauth = loadLinuxDoConfig();
+    if (!ctx.cfg.linuxdoAuthEnabled) {
+      return reply
+        .code(503)
+        .send({ error: "LINUX DO 登录已关闭（LINUXDO_AUTH_ENABLED=false）" });
+    }
     if (!oauth) {
       return reply
         .code(503)
@@ -671,6 +675,9 @@ export async function registerRoutes(
 
   app.get("/api/v1/auth/callback", async (req, reply) => {
     const oauth = loadLinuxDoConfig();
+    if (!ctx.cfg.linuxdoAuthEnabled) {
+      return reply.code(503).type("text/plain; charset=utf-8").send("LINUX DO 登录已关闭");
+    }
     if (!oauth) return reply.code(503).send("oauth not configured");
     const q = req.query as { code?: string; state?: string; error?: string };
     if (q.error) return reply.code(400).send(`oauth error: ${q.error}`);

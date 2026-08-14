@@ -3929,12 +3929,22 @@
       await resolveInviteFromUrl();
       try {
         const cfg = await api("/api/v1/auth/config");
-        if (cfg && cfg.localAuthEnabled === false) {
-          setAuthTab("login");
-          if ($("authTabs")) $("authTabs").style.display = "none";
-          if ($("authLoginPanel")) $("authLoginPanel").style.display = "none";
-          if ($("authRegisterPanel")) $("authRegisterPanel").style.display = "none";
-          setInviteBanner(null);
+        if (cfg) {
+          if (cfg.localAuthEnabled === false) {
+            setAuthTab("login");
+            if ($("authTabs")) $("authTabs").style.display = "none";
+            if ($("authLoginPanel")) $("authLoginPanel").style.display = "none";
+            if ($("authRegisterPanel")) $("authRegisterPanel").style.display = "none";
+            setInviteBanner(null);
+          }
+          if (cfg.oauthEnabled === false) {
+            const btn = $("loginBtn");
+            if (btn) btn.style.display = "none";
+            const divider = $("loginGate")?.querySelector(".auth-divider");
+            if (divider) divider.style.display = "none";
+            const note = $("loginGate")?.querySelector(".auth-footer-note");
+            if (note) note.style.display = "none";
+          }
         }
       } catch (_) {}
     }
@@ -4529,10 +4539,9 @@
         btn.onclick = async () => {
           const key = btn.dataset.as;
           const [botAccountId, peerId] = key.split("|");
-          const sel =
-            btn.closest(".row-actions, .mcard, tr")?.querySelector(
-              `select[data-asg="${CSS.escape(key)}"]`,
-            ) || document.querySelector(`select[data-asg="${CSS.escape(key)}"]`);
+          const sel = btn
+            .closest(".mcard, tr")
+            ?.querySelector(`select[data-asg="${CSS.escape(key)}"]`);
           if (!sel?.value) {
             toast("请先在人设广场添加人设", true);
             return;
